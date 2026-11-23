@@ -1,0 +1,1 @@
+import {json,isAuth} from "./_shared.js";export default function(req,res){if(req.method!=="GET")return json(res,405,{message:"Method not allowed"});return json(res,200,{authenticated:isAuth(req)})}

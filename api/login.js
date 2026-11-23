@@ -1,0 +1,2 @@
+import {json,makeSession,cookieOpts,safeEq} from "./_shared.js";
+export default function(req,res){if(req.method!=="POST")return json(res,405,{message:"Method not allowed"});if(!process.env.DAMA_ACCESS_PASSWORD||!safeEq(req.body?.password||"",process.env.DAMA_ACCESS_PASSWORD))return json(res,401,{message:"كلمة المرور غير صحيحة."});res.setHeader("Set-Cookie",`dama_session=${encodeURIComponent(makeSession())}; ${cookieOpts(28800)}`);return json(res,200,{ok:true})}

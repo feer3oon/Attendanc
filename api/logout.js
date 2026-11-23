@@ -1,0 +1,1 @@
+import {json,cookieOpts} from "./_shared.js";export default function(req,res){if(req.method!=="POST")return json(res,405,{message:"Method not allowed"});res.setHeader("Set-Cookie",`dama_session=; ${cookieOpts(0)}`);return json(res,200,{ok:true})}

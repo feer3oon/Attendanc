@@ -1,0 +1,10 @@
+import QRCode from "qrcode";import {json,requireAuth} from "./_shared.js";
+export default async function(req,res){if(req.method!=="POST")return json(res,405,{message:"Method not allowed"});if(!requireAuth(req,res))return;
+const jwt=process.env.LECTASYNC_JWT_TOKEN;if(!jwt)return json(res,500,{message:"لم يتم ضبط JWT في Vercel."});
+const base=(process.env.LECTASYNC_API_BASE||"https://api.lectasync.online").replace(/\/+$/,""),ctl=new AbortController(),ms=Math.max(3000,Math.min(Number(process.env.REQUEST_TIMEOUT_MS||15000),25000)),timer=setTimeout(()=>ctl.abort(),ms);
+try{const r=await fetch(base+"/api/student/qr/ticket",{method:"POST",headers:{"Accept":"*/*","Authorization":`Bearer ${jwt}`,"Tenant-ID":process.env.LECTASYNC_TENANT_ID||"ZNU:MED","X-App-Version":process.env.LECTASYNC_APP_VERSION||"2.0.0+1","X-Can-Renew-Token":"1"},signal:ctl.signal});
+if(r.status===401)return json(res,401,{message:"انتهت المصادقة أو JWT غير صالح."});if(r.status===403)return json(res,403,{message:"الوصول مرفوض. تحقق من صلاحيات الحساب والجهاز."});if(r.status===429)return json(res,429,{message:"تم تجاوز حد الطلبات. انتظر قليلاً."});if(r.status>=500)return json(res,502,{message:"خدمة LectaSync تواجه مشكلة مؤقتة."});if(!r.ok)return json(res,r.status,{message:`HTTP ${r.status}`});
+const d=await r.json(),ticket=d?.ticket,server_time=Number(d?.server_time),window_start=Number(d?.window_start),window_seconds=Number(d?.window_seconds),period_seconds=Number(d?.period_seconds);
+if(typeof ticket!=="string"||!ticket||![server_time,window_start,window_seconds,period_seconds].every(Number.isFinite)||window_seconds<=0||period_seconds<=0)return json(res,502,{message:"استجابة LectaSync غير صالحة."});
+const qrDataUrl=await QRCode.toDataURL(ticket,{errorCorrectionLevel:"M",margin:2,width:320});return json(res,200,{qrDataUrl,server_time,window_start,window_seconds,period_seconds});
+}catch(e){return json(res,502,{message:e?.name==="AbortError"?"انتهت مهلة الاتصال.":"تعذر الاتصال بخدمة LectaSync."})}finally{clearTimeout(timer)}}

@@ -1,0 +1,1 @@
+import {json,requireAuth} from "./_shared.js";export default function(req,res){if(req.method!=="GET")return json(res,405,{message:"Method not allowed"});if(!requireAuth(req,res))return;return json(res,200,{tenantId:process.env.LECTASYNC_TENANT_ID||"ZNU:MED",appVersion:process.env.LECTASYNC_APP_VERSION||"2.0.0+1"})}
